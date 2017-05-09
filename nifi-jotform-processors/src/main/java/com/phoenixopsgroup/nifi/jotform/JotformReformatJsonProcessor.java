@@ -18,9 +18,7 @@ package com.phoenixopsgroup.nifi.jotform;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.phoenixopsgroup.jotform.gson.Answer;
-import com.phoenixopsgroup.jotform.gson.AnswerTypeAdapter;
-import com.phoenixopsgroup.jotform.gson.JotformSubmission;
+import com.phoenixopsgroup.jotform.gson.*;
 import com.phoenixopsgroup.jotform.util.JotformResponse;
 import com.phoenixopsgroup.jotform.util.JotformUtil;
 import org.apache.commons.io.IOUtils;
@@ -88,11 +86,14 @@ public class JotformReformatJsonProcessor extends AbstractProcessor {
         final ComponentLog log = this.getLogger();
 
         final AtomicReference<String> value = new AtomicReference<>();
+        final AtomicReference<String> formSchema = new AtomicReference<>();
 
         FlowFile flowFile = session.get();
         if ( flowFile == null ) {
             return;
         }
+
+        formSchema.set(flowFile.getAttribute("jotform.form.schema"));
 
         // We expect to receive a Jotform Submission JSON formatted response
         // curl -X GET "https://api.jotform.com/submission/{SUBMISSION_ID}?apiKey={API+KEY}"
@@ -111,8 +112,16 @@ public class JotformReformatJsonProcessor extends AbstractProcessor {
                     JotformSubmission jotformSubmission
                             = gson.fromJson(json, JotformSubmission.class);
 
+                    final GsonBuilder gsonBuilder2 = new GsonBuilder();
+                    gsonBuilder2.registerTypeAdapter(FormQuestion.class, new FormQuestionContentTypeAdapter());
+                    final Gson gson2 = gsonBuilder2.create();
+
+                    FormQuestionResponse formQuestionResponse
+                            = gson2.fromJson(formSchema.get(), FormQuestionResponse.class);
+
                     JotformUtil jotformUtil = new JotformUtil();
-                    JotformResponse jotformResponse = jotformUtil.getResponse(jotformSubmission);
+                    JotformResponse jotformResponse = jotformUtil.getResponse(jotformSubmission, formQuestionResponse);
+
                     value.set(jotformResponse.toJson(false));
 
                 }catch(Exception ex){

@@ -21,12 +21,13 @@ import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.Assert.assertTrue;
@@ -43,21 +44,26 @@ public class JotformReformatJsonProcessorTest
     }
 
     @Test
+    @Ignore
     public void testProcessor() {
 
         try
         {
             // Mock content
-            URL url = this.getClass().getResource("/data/jotform.json");
-            File file = new File(url.getFile());
-            InputStream content = FileUtils.openInputStream(file);
+            File fSubmission = new File("../test-data/jotform-lib/jotform.outreach.submission.json");
+            InputStream content = FileUtils.openInputStream(fSubmission);
+
+            File fFormSchema = new File("../test-data/jotform-lib/jotform.outreach.form.questions.json");
+            String formSchemaJson = FileUtils.readFileToString(fFormSchema, StandardCharsets.UTF_8);
+            // TODO How to get this as a Flowfile Attribute prior to testing
 
             // Mock Processor
             TestRunner runner = TestRunners.newTestRunner(new JotformReformatJsonProcessor());
 
             // Add Properties
 //            runner.setProperty("key","value");
-
+//            runner.setProperty("form.schema",formSchemaJson);
+            
             // Add content to Mock Processor
             runner.enqueue(content);
 
